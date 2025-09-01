@@ -4,6 +4,7 @@
 
 #pragma once
 #include <vector>
+#include <map>
 #include "CMFCGridCtrl.h"
 #include "CCtrlMariaDB.h"
 
@@ -42,6 +43,7 @@ public:
 		sFrontalPattern,    
 		ModelColMAX
 	};
+
 	enum ParamsColIndex
 	{
 		sInspType,
@@ -54,10 +56,21 @@ public:
 		ParamsColMAX
 	};
 
+	CString comboItems[ParamsColMAX] = {
+		_T("sInspType"),
+		_T("sRecipe"),
+		_T("sPattern"),
+		_T("sSubPattern"),
+		_T("sFilterName"),
+		_T("sFilterType"),
+		_T("bItemUsage")
+	};
 	CGridCtrl m_dbGrid;
 	CMFCGridCtrl m_ctrlGrid;
-	CGridCtrl m_prmGrid;
+	CMFCGridCtrl m_prmGrid;
 
+	CString m_SearchString;
+	CString Searchcol = _T("sFilterName");
 	std::vector<std::vector<CString>> tbl_setmodel;
 	std::vector<std::vector<CString>> tbl_setparams;
 
@@ -65,11 +78,23 @@ public:
 	CGridCtrl GridCtrl;
 	CMFCGridCtrl MFCGridCtrl;
 
+	std::map<std::pair<int, int>, CString>& m_SaveCell = m_ctrlGrid.m_editedCells;
+
 	void InitGrid();
 	void DBGridInit();
 	void ModelGridInit();
 	void ParamsGridInit();
+	void ComboBoxInit();
 
 	void SetParamsData(CString sRecipe);
+	void UpDaateParamsData(int nCol, int nRow, CString value);
+	void DeleteParamsData(int nCol, int nRow);
+	void FindDeleteParamsData(int nCol, int nRow, CString value);
 	afx_msg void OnBnClickedDbCon();
+	CEdit m_EditSearch;
+	afx_msg void OnBnClickedSearch();
+	afx_msg void OnBnClickedDbSave();
+	afx_msg void OnBnClickedDelete();
+	CComboBox pCombo;
+	afx_msg void OnSelchangeCombo1();
 };

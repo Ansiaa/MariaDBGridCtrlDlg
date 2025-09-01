@@ -2,6 +2,7 @@
 #include "mysql.h"
 #include ".\GridCtrl.h"
 #include <vector>
+#include <map>
 #include "CMFCGridCtrl.h"
 //#define DB_HOST "127.0.0.1"	// 서버 아이피
 //#define DB_USER "root"	// DB 접속계정
@@ -33,7 +34,7 @@ public:
 	}DB_Setting;
 public:
 	BOOL m_bConnect;
-
+	
 public:
 	CCtrlMariaDB();
 	~CCtrlMariaDB();
@@ -44,5 +45,6 @@ public:
 	void GetDBData(const char* query, std::vector<std::vector<CString>>& DBList, CMFCGridCtrl& m_List);
 	void SaveDBData(std::vector<std::vector<CString>>& DBList, int i, int num, CGridCtrl& m_List);
 	void SaveDBData(std::vector<std::vector<CString>>& DBList, int i, int num, CMFCGridCtrl& m_List);
+	bool ExecuteNonQuery(const char* query);
 };
 

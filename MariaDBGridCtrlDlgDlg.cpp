@@ -8,7 +8,7 @@
 #include "MariaDBGridCtrlDlgDlg.h"
 #include "CCtrlMariaDB.h"
 #include ".\GridCtrl.h"
-
+#include <map>
 #include "afxdialogex.h"
 
 
@@ -64,6 +64,8 @@ void CMariaDBGridCtrlDlgDlg::DoDataExchange(CDataExchange* pDX)
     DDX_Control(pDX, IDC_MODEL_GRID, m_ctrlGrid);
     DDX_Control(pDX, IDC_PARAMS_GRID, m_prmGrid);
     DDX_Control(pDX, IDC_DB_GRID, m_dbGrid);
+    DDX_Control(pDX, IDC_EDIT_SEARCH, m_EditSearch);
+    DDX_Control(pDX, IDC_COMBO1, pCombo);
 }
 
 BEGIN_MESSAGE_MAP(CMariaDBGridCtrlDlgDlg, CDialogEx)
@@ -71,6 +73,10 @@ BEGIN_MESSAGE_MAP(CMariaDBGridCtrlDlgDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
     ON_BN_CLICKED(IDC_DB_CON, &CMariaDBGridCtrlDlgDlg::OnBnClickedDbCon)
+    ON_BN_CLICKED(IDC_SEARCH, &CMariaDBGridCtrlDlgDlg::OnBnClickedSearch)
+    ON_BN_CLICKED(IDC_DB_SAVE, &CMariaDBGridCtrlDlgDlg::OnBnClickedDbSave)
+    ON_BN_CLICKED(IDC_DELETE, &CMariaDBGridCtrlDlgDlg::OnBnClickedDelete)
+    ON_CBN_SELCHANGE(IDC_COMBO1, &CMariaDBGridCtrlDlgDlg::OnSelchangeCombo1)
 END_MESSAGE_MAP()
 
 
@@ -107,7 +113,7 @@ BOOL CMariaDBGridCtrlDlgDlg::OnInitDialog()
 
 	// TODO: 여기에 추가 초기화 작업을 추가합니다.
     InitGrid();
-   
+    ComboBoxInit();
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
 
@@ -169,79 +175,6 @@ void CMariaDBGridCtrlDlgDlg::InitGrid()
    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     
     
-    /*
-    // Grid Column의 인덱스
-    enum ColumnIdx
-    {
-        ID,      // 번호
-        NAME,    // 이름
-        AGE,     // 나이
-        MAX
-    };
-
-    const LPCTSTR NAMES[] = { _T("홍길동"), _T("김민수"), _T("고영희"), _T("유다희") };
-    int nNameSize = sizeof(NAMES) / sizeof(LPCTSTR);
-
-    m_ctrlGrid.SetEditable(TRUE);                    // 수정 가능
-    m_ctrlGrid.SetListMode(TRUE);                    // List Mode 설정 (Cell 클릭 시 한 줄(Row) 전체 선택)
-    m_ctrlGrid.EnableDragAndDrop(FALSE);             // Drag And Drop 기능 비활성화
-    m_ctrlGrid.SetTextBkColor(RGB(240, 240, 240));   // 기본 Cell 배경색
-    m_ctrlGrid.SetTextColor(RGB(25, 180, 70));       // 기본 Cell 텍스트색
-    m_ctrlGrid.SetBkColor(RGB(100, 100, 100));       // 기본 배경색 (TextBkColor에도 영향을 줍니다.)
-    m_ctrlGrid.SetGridColor(RGB(255, 0, 0));         // Grid의 Line 색
-    m_ctrlGrid.SetColumnCount(ColumnIdx::MAX);       // 기본으로 생성할 Column의 개수
-    m_ctrlGrid.SetRowCount(nNameSize + 1);           // 기본으로 생성할 Row의 개수
-    m_ctrlGrid.SetFixedRowCount(1);                  // 고정할 Row의 개수
-    m_ctrlGrid.SetFixedBkColor(RGB(0, 0, 0));            // 고정된 Cell의 배경색
-    m_ctrlGrid.SetFixedTextColor(RGB(255, 255, 255));    // 고정된 Cell의 텍스트색
-
-    for (int nRow = 0; nRow < m_ctrlGrid.GetRowCount(); nRow++)
-    {
-        for (int nCol = 0; nCol < m_ctrlGrid.GetColumnCount(); nCol++)
-        {
-            // Cell 아이템의 설정
-            GV_ITEM item;
-            item.mask = GVIF_TEXT | GVIF_FORMAT;
-            item.nFormat = DT_CENTER | DT_WORDBREAK;
-            item.row = nRow;
-            item.col = nCol;
-
-            // 첫 줄을 헤더로 사용하기 위함
-            if (nRow == 0)
-            {
-                switch (nCol)
-                {
-                case ColumnIdx::ID:
-                    item.strText = _T("번호");
-                    break;
-                case ColumnIdx::NAME:
-                    item.strText = _T("이름");
-                    break;
-                case ColumnIdx::AGE:
-                    item.strText = _T("나이");
-                    break;
-                }
-            }
-            else
-            {
-                switch (nCol)
-                {
-                case ColumnIdx::ID:
-                    item.strText.Format(_T("%d"), nRow);
-                    break;
-                case ColumnIdx::NAME:
-                    item.strText.Format(_T("%s"), NAMES[nRow - 1]);
-                    break;
-                case ColumnIdx::AGE:
-                    item.strText.Format(_T("%d"), rand() % 30);
-                    break;
-                }
-            }
-
-            // Cell 데이터 설정
-            m_ctrlGrid.SetItem(&item);
-        }
-    }*/
 }
 void CMariaDBGridCtrlDlgDlg::DBGridInit()
 {
@@ -301,7 +234,6 @@ void CMariaDBGridCtrlDlgDlg::ModelGridInit()
     //m_ctrlGrid.SetTextColor(RGB(25, 180, 70));       // 기본 Cell 텍스트색
     m_ctrlGrid.SetBkColor(RGB(100, 100, 100));       // 기본 배경색 (TextBkColor에도 영향을 줍니다.)
     //m_ctrlGrid.SetGridColor(RGB(255, 0, 0));         // Grid의 Line 색
-
 }
 void CMariaDBGridCtrlDlgDlg::ParamsGridInit()
 {
@@ -310,17 +242,21 @@ void CMariaDBGridCtrlDlgDlg::ParamsGridInit()
     {
        m_prmGrid.SubclassDlgItem(IDC_PARAMS_GRID, this);
     }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////
     m_prmGrid.SetEditable(TRUE);
-    m_prmGrid.SetListMode(TRUE);
+    //m_prmGrid.SetListMode(TRUE);
   
     m_prmGrid.EnableDragAndDrop(FALSE);
 
     m_prmGrid.SetRowCount(1);             // 최소 1행 확보
     m_prmGrid.SetFixedRowCount(1);        // <== 헤더 행 만들기
     m_prmGrid.SetColumnCount(ParamsColIndex::ParamsColMAX); // 기본으로 생성할 Column의 개수
-   
+    m_prmGrid.SetColumnWidth(1, 220);
+    m_prmGrid.SetColumnWidth(4, 220);
+
     int i = 0;
+
     m_prmGrid.SetItemText(0, i++, _T("sInspType"));
     m_prmGrid.SetItemText(0, i++, _T("sRecipe"));
     m_prmGrid.SetItemText(0, i++, _T("sPattern"));
@@ -330,9 +266,19 @@ void CMariaDBGridCtrlDlgDlg::ParamsGridInit()
     m_prmGrid.SetItemText(0, i++, _T("bItemUsage"));
 
     m_prmGrid.SetTextBkColor(RGB(240, 240, 240));   // 기본 Cell 배경색
-    m_prmGrid.SetTextColor(RGB(25, 180, 70));       // 기본 Cell 텍스트색
+    //m_prmGrid.SetTextColor(RGB(25, 180, 70));       // 기본 Cell 텍스트색
     m_prmGrid.SetBkColor(RGB(100, 100, 100));       // 기본 배경색 (TextBkColor에도 영향을 줍니다.)
     m_prmGrid.SetGridColor(RGB(255, 0, 0));         // Grid의 Line 색
+}
+void CMariaDBGridCtrlDlgDlg::ComboBoxInit()
+{
+    for (int i = ParamsColMAX-1; i > 0; i--)
+    {
+        pCombo.InsertString(0, comboItems[i]); // 항상 맨 위에 추가
+    }
+
+    pCombo.SetCurSel(3);
+
 }
 void CMariaDBGridCtrlDlgDlg::OnBnClickedDbCon()
 {
@@ -356,5 +302,327 @@ void CMariaDBGridCtrlDlgDlg::SetParamsData(CString sRecipe)
     SELECT_query.Format(L"SELECT sInspType, sRecipe, sPattern, sSubPattern, sFilterName, sFilterType, bItemUsage FROM %s.tbl_setparams WHERE sRecipe = '%s' AND sInspType = 'Frontal';", MariaDB.DB_Setting.DB_NAME, sRecipe);
 
     MariaDB.GetDBData(CT2A(SELECT_query), tbl_setparams, m_prmGrid);
+    
+}
+void CMariaDBGridCtrlDlgDlg::UpDaateParamsData(int nCol, int nRow,CString value)
+{
+    // nRow, nCol 유효 범위 체크 필요
+    if (nRow < 0 || nCol < 0 || nRow >= tbl_setparams.size())
+        return;
+
+    CString UPDATE_query;
+    nRow -= 1;
+
+    switch (nCol)
+    {
+    case ParamsColIndex::sInspType:
+        UPDATE_query.Format(
+            L"UPDATE `oled_ami_it_integrated`.`tbl_setparams` "
+            L"SET `sInspType`='%s' "
+            L"WHERE `sInspType`='%s' AND `sRecipe`='%s' AND `sPattern`='%s' "
+            L"AND `sSubPattern`='%s' AND `sFilterName`='%s' AND `sFilterType`='%s';",
+            value,
+            tbl_setparams[nRow][ParamsColIndex::sInspType],
+            tbl_setparams[nRow][ParamsColIndex::sRecipe],
+            tbl_setparams[nRow][ParamsColIndex::sPattern],
+            tbl_setparams[nRow][ParamsColIndex::sSubPattern],
+            tbl_setparams[nRow][ParamsColIndex::sFilterName],
+            tbl_setparams[nRow][ParamsColIndex::sFilterType]
+        );
+        break;
+
+    case ParamsColIndex::sRecipe:
+        UPDATE_query.Format(
+            L"UPDATE `oled_ami_it_integrated`.`tbl_setparams` "
+            L"SET `sRecipe`='%s' "
+            L"WHERE `sInspType`='%s' AND `sRecipe`='%s' AND `sPattern`='%s' "
+            L"AND `sSubPattern`='%s' AND `sFilterName`='%s' AND `sFilterType`='%s';",
+            value,
+            tbl_setparams[nRow][ParamsColIndex::sInspType],
+            tbl_setparams[nRow][ParamsColIndex::sRecipe],
+            tbl_setparams[nRow][ParamsColIndex::sPattern],
+            tbl_setparams[nRow][ParamsColIndex::sSubPattern],
+            tbl_setparams[nRow][ParamsColIndex::sFilterName],
+            tbl_setparams[nRow][ParamsColIndex::sFilterType]
+        );
+        break;
+
+    case ParamsColIndex::sPattern:
+        UPDATE_query.Format(
+            L"UPDATE `oled_ami_it_integrated`.`tbl_setparams` "
+            L"SET `sPattern`='%s' "
+            L"WHERE `sInspType`='%s' AND `sRecipe`='%s' AND `sPattern`='%s' "
+            L"AND `sSubPattern`='%s' AND `sFilterName`='%s' AND `sFilterType`='%s';",
+            value,
+            tbl_setparams[nRow][ParamsColIndex::sInspType],
+            tbl_setparams[nRow][ParamsColIndex::sRecipe],
+            tbl_setparams[nRow][ParamsColIndex::sPattern],
+            tbl_setparams[nRow][ParamsColIndex::sSubPattern],
+            tbl_setparams[nRow][ParamsColIndex::sFilterName],
+            tbl_setparams[nRow][ParamsColIndex::sFilterType]
+        );
+        break;
+
+    case ParamsColIndex::sSubPattern:
+        UPDATE_query.Format(
+            L"UPDATE `oled_ami_it_integrated`.`tbl_setparams` "
+            L"SET `sSubPattern`='%s' "
+            L"WHERE `sInspType`='%s' AND `sRecipe`='%s' AND `sPattern`='%s' "
+            L"AND `sSubPattern`='%s' AND `sFilterName`='%s' AND `sFilterType`='%s';",
+            value,
+            tbl_setparams[nRow][ParamsColIndex::sInspType],
+            tbl_setparams[nRow][ParamsColIndex::sRecipe],
+            tbl_setparams[nRow][ParamsColIndex::sPattern],
+            tbl_setparams[nRow][ParamsColIndex::sSubPattern],
+            tbl_setparams[nRow][ParamsColIndex::sFilterName],
+            tbl_setparams[nRow][ParamsColIndex::sFilterType]
+        );
+        break;
+
+    case ParamsColIndex::sFilterName:
+        UPDATE_query.Format(
+            L"UPDATE `oled_ami_it_integrated`.`tbl_setparams` "
+            L"SET `sFilterName`='%s' "
+            L"WHERE `sInspType`='%s' AND `sRecipe`='%s' AND `sPattern`='%s' "
+            L"AND `sSubPattern`='%s' AND `sFilterName`='%s' AND `sFilterType`='%s';",
+            value,
+            tbl_setparams[nRow][ParamsColIndex::sInspType],
+            tbl_setparams[nRow][ParamsColIndex::sRecipe],
+            tbl_setparams[nRow][ParamsColIndex::sPattern],
+            tbl_setparams[nRow][ParamsColIndex::sSubPattern],
+            tbl_setparams[nRow][ParamsColIndex::sFilterName],
+            tbl_setparams[nRow][ParamsColIndex::sFilterType]
+        );
+        break;
+
+    case ParamsColIndex::sFilterType:
+        UPDATE_query.Format(
+            L"UPDATE `oled_ami_it_integrated`.`tbl_setparams` "
+            L"SET `sFilterType`='%s' "
+            L"WHERE `sInspType`='%s' AND `sRecipe`='%s' AND `sPattern`='%s' "
+            L"AND `sSubPattern`='%s' AND `sFilterName`='%s' AND `sFilterType`='%s';",
+            value,
+            tbl_setparams[nRow][ParamsColIndex::sInspType],
+            tbl_setparams[nRow][ParamsColIndex::sRecipe],
+            tbl_setparams[nRow][ParamsColIndex::sPattern],
+            tbl_setparams[nRow][ParamsColIndex::sSubPattern],
+            tbl_setparams[nRow][ParamsColIndex::sFilterName],
+            tbl_setparams[nRow][ParamsColIndex::sFilterType]
+        );
+        break;
+
+    case ParamsColIndex::bItemUsage:
+        UPDATE_query.Format(
+            L"UPDATE `oled_ami_it_integrated`.`tbl_setparams` "
+            L"SET `bItemUsage`='%s' "
+            L"WHERE `sInspType`='%s' AND `sRecipe`='%s' AND `sPattern`='%s' "
+            L"AND `sSubPattern`='%s' AND `sFilterName`='%s' AND `sFilterType`='%s';",
+            value,
+            tbl_setparams[nRow][ParamsColIndex::sInspType],
+            tbl_setparams[nRow][ParamsColIndex::sRecipe],
+            tbl_setparams[nRow][ParamsColIndex::sPattern],
+            tbl_setparams[nRow][ParamsColIndex::sSubPattern],
+            tbl_setparams[nRow][ParamsColIndex::sFilterName],
+            tbl_setparams[nRow][ParamsColIndex::sFilterType]
+        );
+        break;
+    }
+    MariaDB.ExecuteNonQuery(CT2A(UPDATE_query));
+    
+    tbl_setparams.clear();
+    SetParamsData(m_ctrlGrid.Recipe);
+ 
+    MariaDB.m_fnCloseDB();
 }
 
+void CMariaDBGridCtrlDlgDlg::OnBnClickedDbSave()
+{
+
+    m_prmGrid.EndEditing();
+    auto m_SaveCell = m_prmGrid.GetEditedCells();
+    if (m_SaveCell.empty())
+    {
+        AfxMessageBox(_T("편집된 셀이 없습니다."));
+        return;
+    }
+    // 모든 편집된 셀 순회
+    for (const auto& cell : m_SaveCell)
+    {
+        int nCol = cell.first.second;
+        int nRow = cell.first.first;
+        CString value = cell.second;   
+
+       
+        UpDaateParamsData(nCol, nRow, value);
+    }
+
+}
+void CMariaDBGridCtrlDlgDlg::DeleteParamsData(int nCol, int nRow)
+{
+    // nRow, nCol 유효 범위 체크 필요
+    if (nRow < 0 || nCol < 0 || nRow >= tbl_setparams.size())
+        return;
+
+    CString DELETE_query;
+    nRow -= 1;
+
+    switch (nCol)
+    {
+    case ParamsColIndex::sInspType:
+        DELETE_query.Format(
+            L"DELETE FROM `oled_ami_it_integrated`.`tbl_setparams` "
+            L"WHERE `sInspType`='%s' AND `sRecipe`='%s' AND `sPattern`='%s' "
+            L"AND `sSubPattern`='%s' AND `sFilterName`='%s' AND `sFilterType`='%s';",
+            tbl_setparams[nRow][ParamsColIndex::sInspType],
+            tbl_setparams[nRow][ParamsColIndex::sRecipe],
+            tbl_setparams[nRow][ParamsColIndex::sPattern],
+            tbl_setparams[nRow][ParamsColIndex::sSubPattern],
+            tbl_setparams[nRow][ParamsColIndex::sFilterName],
+            tbl_setparams[nRow][ParamsColIndex::sFilterType]
+        );
+        break;
+
+    case ParamsColIndex::sRecipe:
+        DELETE_query.Format(
+            L"DELETE FROM `oled_ami_it_integrated`.`tbl_setparams` "
+            L"WHERE `sInspType`='%s' AND `sRecipe`='%s' AND `sPattern`='%s' "
+            L"AND `sSubPattern`='%s' AND `sFilterName`='%s' AND `sFilterType`='%s';",
+            tbl_setparams[nRow][ParamsColIndex::sInspType],
+            tbl_setparams[nRow][ParamsColIndex::sRecipe],
+            tbl_setparams[nRow][ParamsColIndex::sPattern],
+            tbl_setparams[nRow][ParamsColIndex::sSubPattern],
+            tbl_setparams[nRow][ParamsColIndex::sFilterName],
+            tbl_setparams[nRow][ParamsColIndex::sFilterType]
+        );
+        break;
+
+    case ParamsColIndex::sPattern:
+        DELETE_query.Format(
+            L"DELETE FROM `oled_ami_it_integrated`.`tbl_setparams` "
+            L"WHERE `sInspType`='%s' AND `sRecipe`='%s' AND `sPattern`='%s' "
+            L"AND `sSubPattern`='%s' AND `sFilterName`='%s' AND `sFilterType`='%s';",
+            tbl_setparams[nRow][ParamsColIndex::sInspType],
+            tbl_setparams[nRow][ParamsColIndex::sRecipe],
+            tbl_setparams[nRow][ParamsColIndex::sPattern],
+            tbl_setparams[nRow][ParamsColIndex::sSubPattern],
+            tbl_setparams[nRow][ParamsColIndex::sFilterName],
+            tbl_setparams[nRow][ParamsColIndex::sFilterType]
+        );
+        break;
+
+    case ParamsColIndex::sSubPattern:
+        DELETE_query.Format(
+            L"DELETE FROM `oled_ami_it_integrated`.`tbl_setparams` "
+            L"WHERE `sInspType`='%s' AND `sRecipe`='%s' AND `sPattern`='%s' "
+            L"AND `sSubPattern`='%s' AND `sFilterName`='%s' AND `sFilterType`='%s';",
+            tbl_setparams[nRow][ParamsColIndex::sInspType],
+            tbl_setparams[nRow][ParamsColIndex::sRecipe],
+            tbl_setparams[nRow][ParamsColIndex::sPattern],
+            tbl_setparams[nRow][ParamsColIndex::sSubPattern],
+            tbl_setparams[nRow][ParamsColIndex::sFilterName],
+            tbl_setparams[nRow][ParamsColIndex::sFilterType]
+        );
+        break;
+
+    case ParamsColIndex::sFilterName:
+        DELETE_query.Format(
+            L"DELETE FROM `oled_ami_it_integrated`.`tbl_setparams` "
+            L"WHERE `sInspType`='%s' AND `sRecipe`='%s' AND `sPattern`='%s' "
+            L"AND `sSubPattern`='%s' AND `sFilterName`='%s' AND `sFilterType`='%s';",
+            tbl_setparams[nRow][ParamsColIndex::sInspType],
+            tbl_setparams[nRow][ParamsColIndex::sRecipe],
+            tbl_setparams[nRow][ParamsColIndex::sPattern],
+            tbl_setparams[nRow][ParamsColIndex::sSubPattern],
+            tbl_setparams[nRow][ParamsColIndex::sFilterName],
+            tbl_setparams[nRow][ParamsColIndex::sFilterType]
+        );
+        break;
+
+    case ParamsColIndex::sFilterType:
+        DELETE_query.Format(
+            L"DELETE FROM `oled_ami_it_integrated`.`tbl_setparams` "
+            L"WHERE `sInspType`='%s' AND `sRecipe`='%s' AND `sPattern`='%s' "
+            L"AND `sSubPattern`='%s' AND `sFilterName`='%s' AND `sFilterType`='%s';",
+            tbl_setparams[nRow][ParamsColIndex::sInspType],
+            tbl_setparams[nRow][ParamsColIndex::sRecipe],
+            tbl_setparams[nRow][ParamsColIndex::sPattern],
+            tbl_setparams[nRow][ParamsColIndex::sSubPattern],
+            tbl_setparams[nRow][ParamsColIndex::sFilterName],
+            tbl_setparams[nRow][ParamsColIndex::sFilterType]
+        );
+        break;
+
+    case ParamsColIndex::bItemUsage:
+        DELETE_query.Format(
+            L"DELETE FROM `oled_ami_it_integrated`.`tbl_setparams` "
+            L"WHERE `sInspType`='%s' AND `sRecipe`='%s' AND `sPattern`='%s' "
+            L"AND `sSubPattern`='%s' AND `sFilterName`='%s' AND `sFilterType`='%s';",
+            tbl_setparams[nRow][ParamsColIndex::sInspType],
+            tbl_setparams[nRow][ParamsColIndex::sRecipe],
+            tbl_setparams[nRow][ParamsColIndex::sPattern],
+            tbl_setparams[nRow][ParamsColIndex::sSubPattern],
+            tbl_setparams[nRow][ParamsColIndex::sFilterName],
+            tbl_setparams[nRow][ParamsColIndex::sFilterType]
+        );
+        break;
+    }
+    MariaDB.ExecuteNonQuery(CT2A(DELETE_query));
+   
+    tbl_setparams.clear();
+    SetParamsData(m_ctrlGrid.Recipe);
+
+    MariaDB.m_fnCloseDB();
+}
+void CMariaDBGridCtrlDlgDlg::FindDeleteParamsData(int nCol, int nRow, CString value)
+{
+    
+
+}
+void CMariaDBGridCtrlDlgDlg::OnBnClickedSearch()
+{
+    // TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+    MariaDB.m_fnInitDB();
+    MariaDB.m_fnConnectDB();
+
+    m_EditSearch.GetWindowText(m_SearchString);
+    CString FILTER_query;
+    FILTER_query.Format(L"SELECT sInspType, sRecipe, sPattern, sSubPattern, sFilterName, sFilterType, bItemUsage "
+        L"FROM %s.tbl_setparams "
+        L"WHERE sRecipe = '%s' AND sInspType = 'Frontal' AND `%s` LIKE '%%%s%%';",
+        MariaDB.DB_Setting.DB_NAME, m_ctrlGrid.Recipe, Searchcol, m_SearchString
+    );
+
+    tbl_setparams.clear();
+    ParamsGridInit();
+
+    MariaDB.GetDBData(CT2A(FILTER_query), tbl_setparams, m_prmGrid);
+
+    MariaDB.m_fnCloseDB();
+}
+
+void CMariaDBGridCtrlDlgDlg::OnBnClickedDelete()
+{
+    // TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+ 
+    if (m_prmGrid.m_nSelectedRow >= 0)
+    {
+        DeleteParamsData(m_prmGrid.m_nSelectedCol, m_prmGrid.m_nSelectedRow);
+    }
+    else
+    {
+        AfxMessageBox(_T("선택된 셀이 없습니다."));
+    }
+}
+
+
+void CMariaDBGridCtrlDlgDlg::OnSelchangeCombo1()
+{
+    // TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+    int Sel = pCombo.GetCurSel(); 
+    if (Sel != CB_ERR)
+    {
+        pCombo.GetLBText(Sel, Searchcol); 
+        //AfxMessageBox(_T("선택된 값: ") + Searchcol);
+    }
+    
+}
